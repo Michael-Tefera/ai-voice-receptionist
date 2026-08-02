@@ -59,12 +59,13 @@ The complete Innovique production platform remains private. This repository will
 
 Active development and documentation.
 
-## Developed Through
+## Developed By
 
 [Innovique LLC](https://innovique.co)
 
 ## Contact
 
-Michael Tefera  
-[LinkedIn](YOUR_LINKEDIN_URL)  
-[Email](mailto:michael@innovique.co)
+- **Michael Tefera**
+- 💼 LinkedIn: https://www.linkedin.com/in/michaeltefera
+- 📧 Email: michael@innovique.co
+- 🌐 Website: https://innovique.co
