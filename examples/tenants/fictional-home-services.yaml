@@ -1,0 +1,124 @@
+# Fictional tenant: Northstar Home Services
+# Demonstrates home-services configuration with support and lead modules.
+
+tenant_id: fictional-home-services
+display_name: Northstar Home Services (Fictional)
+industry: home-services
+
+branding:
+  agent_name: Jordan
+  voice_style: confident-helpful
+  language: en-US
+  greeting: >
+    Thanks for calling Northstar Home Services. I'm Jordan.
+    Are you calling about heating, cooling, plumbing, or something else?
+
+contact:
+  phone_display: "+1-555-0202"
+  email_display: service@example.com  # fictional — RFC 2606 reserved domain
+  website: https://northstar-fictional.test
+
+conversation:
+  max_turns: 35
+  silence_timeout_seconds: 10
+  allow_interruptions: true
+
+persona:
+  tone: professional
+  formality: casual-professional
+  constraints:
+    - Do not quote exact prices without a scheduled estimate
+    - Confirm service area before booking
+
+prompts:
+  system_prompt_ref: examples/prompts/fictional-receptionist.md
+
+business_hours:
+  timezone: America/Denver
+  schedule:
+    monday:    { open: "07:00", close: "19:00" }
+    tuesday:   { open: "07:00", close: "19:00" }
+    wednesday: { open: "07:00", close: "19:00" }
+    thursday:  { open: "07:00", close: "19:00" }
+    friday:    { open: "07:00", close: "19:00" }
+    saturday:  { open: "08:00", close: "14:00" }
+    sunday:    closed
+  after_hours:
+    behavior: emergency-routing
+    message: >
+      For emergencies like no heat in winter or active water leaks,
+      say "emergency" and I'll connect you to our on-call technician line.
+
+routing:
+  intents:
+    quote_request:
+      destination: module:leads
+    service_issue:
+      destination: module:support
+    billing:
+      destination: escalate:billing-queue
+
+escalation:
+  triggers:
+    keywords: ["emergency", "gas leak", "flooding"]
+  handoff:
+    type: telephony-transfer
+    target: fictional-on-call-queue
+
+knowledge:
+  sources:
+    - id: warranty-policy
+      type: file
+      content_ref: examples/knowledge/fictional-home-warranty.md
+    - id: service-areas
+      type: file
+      content_ref: examples/knowledge/fictional-service-areas.md
+
+enabled_modules:
+  - receptionist
+  - support
+  - leads
+  - follow-up
+
+integrations:
+  - id: fictional-crm
+    type: crm
+    config_ref: examples/integrations/fictional-crm.yaml
+  - id: fictional-notifications
+    type: notifications
+    config_ref: examples/integrations/fictional-notifications.yaml
+
+modules:
+  leads:
+    qualification_questions:
+      - id: service_type
+        prompt: Which service do you need — HVAC, plumbing, or electrical?
+      - id: timeline
+        prompt: When are you hoping to have the work done?
+      - id: property_type
+        prompt: Is this for a residential or commercial property?
+    scoring_rules:
+      hot_threshold: 70
+      rules:
+        - condition: timeline_within_7_days
+          points: 30
+        - condition: commercial_property
+          points: 20
+  support:
+    ticket_categories:
+      - warranty
+      - billing
+      - technical
+
+deployment:
+  profile: isolated
+  channels:
+    - telephony
+    - browser
+  features:
+    recording_enabled: true
+    transcript_storage: true
+    analytics_enabled: true
+  data_retention:
+    transcript_days: 90
+    recording_days: 30

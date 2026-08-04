@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/example/ai-voice-receptionist/schemas/integration.schema.json",
+  "title": "Integration Definition",
+  "description": "Provider-neutral integration schema (draft v0.1). Credentials must not appear in this file.",
+  "type": "object",
+  "required": ["integration_id", "type", "provider"],
+  "additionalProperties": false,
+  "properties": {
+    "integration_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["calendar", "crm", "notifications", "ticketing", "webhook", "custom"]
+    },
+    "provider": {
+      "type": "string",
+      "description": "Provider identifier (e.g. mock, generic-webhook). Not a vendor lock-in."
+    },
+    "display_name": { "type": "string" },
+    "enabled": { "type": "boolean", "default": true },
+    "config": {
+      "type": "object",
+      "description": "Non-secret configuration parameters only",
+      "additionalProperties": true
+    },
+    "auth": {
+      "type": "object",
+      "description": "References to environment variables or secret keys — never literal secrets",
+      "properties": {
+        "method": {
+          "enum": ["env", "secret_ref", "oauth", "none"]
+        },
+        "env_var": { "type": "string" },
+        "secret_key": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "parameters": { "type": "object" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "rate_limits": {
+      "type": "object",
+      "properties": {
+        "requests_per_minute": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

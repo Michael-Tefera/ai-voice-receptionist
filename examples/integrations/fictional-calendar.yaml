@@ -1,0 +1,26 @@
+# Fictional integration: Calendar (mock provider)
+# Credentials supplied via environment — never stored in this file.
+
+integration_id: fictional-calendar
+type: calendar
+provider: mock
+display_name: Fictional Calendar (Mock)
+enabled: true
+
+config:
+  timezone: America/Chicago
+  slot_buffer_minutes: 15
+  base_url: https://calendar-sandbox.fictional.test/api
+
+auth:
+  method: env
+  env_var: FICTIONAL_CALENDAR_API_KEY
+
+actions:
+  - name: list_available_slots
+    description: Return available appointment slots for a service type
+  - name: create_booking
+    description: Create a confirmed booking for a selected slot
+
+rate_limits:
+  requests_per_minute: 30

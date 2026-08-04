@@ -1,0 +1,135 @@
+# Fictional tenant: Bright Smile Dental
+# Demonstrates configuration structure only — all data is fictional.
+
+tenant_id: fictional-dental-clinic
+display_name: Bright Smile Dental (Fictional)
+industry: healthcare-dental
+
+# Optional base profile inheritance (file would live outside public examples)
+# extends: profiles/base-receptionist.yaml
+
+branding:
+  agent_name: Alex
+  voice_style: warm-professional
+  language: en-US
+  greeting: >
+    Thank you for calling Bright Smile Dental. This is Alex, your virtual assistant.
+    How can I help you today?
+
+contact:
+  # Fictional contact — do not use real numbers
+  phone_display: "+1-555-0101"
+  email_display: frontdesk@example.com  # fictional — RFC 2606 reserved domain
+  website: https://bright-smile-fictional.test
+
+conversation:
+  max_turns: 40
+  silence_timeout_seconds: 8
+  allow_interruptions: true
+
+persona:
+  tone: friendly
+  formality: semi-formal
+  constraints:
+    - Never provide real medical diagnoses
+    - Offer to schedule or take a message for clinical questions
+
+prompts:
+  system_prompt_ref: examples/prompts/fictional-receptionist.md
+
+business_hours:
+  timezone: America/Chicago
+  schedule:
+    monday:    { open: "08:00", close: "17:00" }
+    tuesday:   { open: "08:00", close: "17:00" }
+    wednesday: { open: "08:00", close: "17:00" }
+    thursday:  { open: "08:00", close: "17:00" }
+    friday:    { open: "08:00", close: "16:00" }
+    saturday:  closed
+    sunday:    closed
+  holidays:
+    - "2026-12-25"
+  after_hours:
+    behavior: offer-callback
+    message: >
+      Our office is currently closed. I can take your name and number
+      and someone will call you back on the next business day.
+
+routing:
+  intents:
+    appointment:
+      destination: module:appointments
+    insurance_question:
+      destination: knowledge:insurance-faq
+    emergency:
+      destination: escalate:human-on-call
+    general:
+      destination: module:receptionist
+
+escalation:
+  triggers:
+    keywords: ["speak to a person", "manager", "complaint"]
+    max_failed_intents: 3
+  handoff:
+    type: notification
+    target: operator-queue-dental-fictional
+
+knowledge:
+  sources:
+    - id: insurance-faq
+      type: file
+      content_ref: examples/knowledge/fictional-dental-insurance-faq.md
+    - id: services-catalog
+      type: file
+      content_ref: examples/knowledge/fictional-dental-services.md
+
+enabled_modules:
+  - receptionist
+  - appointments
+  - leads
+
+integrations:
+  - id: fictional-calendar
+    type: calendar
+    config_ref: examples/integrations/fictional-calendar.yaml
+  - id: fictional-notifications
+    type: notifications
+    config_ref: examples/integrations/fictional-notifications.yaml
+
+workflows:
+  - examples/workflows/appointment-booking.yaml
+
+# Placeholder workflow IDs — definitions planned for Phase 5 (follow-up module)
+default_workflows:
+  on_session_end:
+    lead_captured: follow-up-lead-nurture
+    appointment_confirmed: follow-up-appointment-reminder
+
+modules:
+  appointments:
+    service_types:
+      - id: cleaning
+        label: Routine Cleaning
+        duration_minutes: 45
+      - id: consultation
+        label: New Patient Consultation
+        duration_minutes: 30
+  leads:
+    qualification_questions:
+      - id: new_patient
+        prompt: Are you a new or existing patient?
+      - id: insurance
+        prompt: Do you have dental insurance you'd like us to note?
+
+deployment:
+  profile: demo
+  channels:
+    - browser
+    # telephony enabled in isolated deployments only
+  features:
+    recording_enabled: false
+    transcript_storage: true
+    analytics_enabled: true
+  data_retention:
+    transcript_days: 30
+    recording_days: 0

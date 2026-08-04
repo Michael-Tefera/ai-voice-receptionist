@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/example/ai-voice-receptionist/schemas/workflow.schema.json",
+  "title": "Workflow Definition",
+  "description": "Provider-neutral workflow schema (draft v0.1)",
+  "type": "object",
+  "required": ["workflow_id", "version", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^0\\.1$"
+    },
+    "display_name": { "type": "string" },
+    "description": { "type": "string" },
+    "triggers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "enum": ["module_intent", "tool_invocation", "session_event", "schedule"]
+          },
+          "value": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "enum": ["string", "number", "boolean", "object"] },
+          "required": { "type": "boolean", "default": false },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/step" }
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "timeout_seconds": { "type": "integer", "minimum": 1 },
+        "max_retries": { "type": "integer", "minimum": 0 },
+        "concurrent_per_session": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "enum": ["condition", "conversation", "integration", "outcome", "delay", "tool"]
+        },
+        "config": { "type": "object" },
+        "optional": { "type": "boolean" },
+        "on_error": { "type": "string" },
+        "on_false": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

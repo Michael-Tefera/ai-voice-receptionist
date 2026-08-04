@@ -1,0 +1,21 @@
+# Fictional integration: CRM (mock provider)
+
+integration_id: fictional-crm
+type: crm
+provider: mock
+display_name: Fictional CRM (Mock)
+enabled: true
+
+config:
+  base_url: https://crm-sandbox.fictional.test/api
+  default_pipeline: inbound-voice-leads
+
+auth:
+  method: env
+  env_var: FICTIONAL_CRM_API_KEY
+
+actions:
+  - name: create_lead
+    description: Create a lead record from qualification data
+  - name: update_lead
+    description: Update an existing lead record

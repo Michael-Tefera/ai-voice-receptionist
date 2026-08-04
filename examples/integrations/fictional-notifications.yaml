@@ -1,0 +1,23 @@
+# Fictional integration: Notifications (mock provider)
+
+integration_id: fictional-notifications
+type: notifications
+provider: mock
+display_name: Fictional Notifications (Mock)
+enabled: true
+
+config:
+  default_from: noreply@fictional-business.test
+  supported_channels:
+    - sms
+    - email
+
+auth:
+  method: env
+  env_var: FICTIONAL_NOTIFICATIONS_API_KEY
+
+actions:
+  - name: send_sms
+    description: Send SMS using a named template
+  - name: send_email
+    description: Send email using a named template

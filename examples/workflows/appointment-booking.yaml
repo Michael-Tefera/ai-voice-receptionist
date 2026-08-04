@@ -1,0 +1,99 @@
+# Fictional workflow: Appointment Booking
+# Demonstrates workflow structure — integrations use mock/sandbox endpoints only.
+
+workflow_id: appointment-booking
+version: "0.1"
+display_name: Appointment Booking (Fictional)
+description: >
+  Guides a caller through service selection, availability check,
+  booking confirmation, and optional follow-up notification.
+
+triggers:
+  - type: module_intent
+    value: book_appointment
+  - type: tool_invocation
+    value: start_appointment_booking
+
+inputs:
+  - name: service_type_id
+    type: string
+    required: true
+  - name: caller_name
+    type: string
+    required: false
+  - name: caller_phone
+    type: string
+    required: false
+    description: Fictional demo numbers only (e.g. +1-555-01xx)
+
+steps:
+  - id: validate_service
+    type: condition
+    config:
+      expression: service_type_id in tenant.modules.appointments.service_types
+    on_false: escalate_invalid_service
+
+  - id: collect_preferences
+    type: conversation
+    config:
+      prompt: Ask for preferred date and time window if not already captured.
+
+  - id: check_availability
+    type: integration
+    config:
+      integration_id: fictional-calendar
+      action: list_available_slots
+      params:
+        service_type_id: "{{ inputs.service_type_id }}"
+        date_range_days: 7
+    on_error: offer_callback
+
+  - id: confirm_slot
+    type: conversation
+    config:
+      prompt: Offer up to three available slots and confirm caller selection.
+
+  - id: create_booking
+    type: integration
+    config:
+      integration_id: fictional-calendar
+      action: create_booking
+      params:
+        slot_id: "{{ steps.confirm_slot.output.selected_slot_id }}"
+        caller_name: "{{ inputs.caller_name }}"
+        caller_phone: "{{ inputs.caller_phone }}"
+    on_error: offer_callback
+
+  - id: send_confirmation
+    type: integration
+    config:
+      integration_id: fictional-notifications
+      action: send_sms
+      params:
+        to: "{{ inputs.caller_phone }}"
+        template: appointment_confirmation_fictional
+    optional: true
+
+  - id: complete
+    type: outcome
+    config:
+      outcome: appointment_confirmed
+      summary_template: >
+        Booked {{ inputs.service_type_id }} for {{ inputs.caller_name }}.
+
+  - id: escalate_invalid_service
+    type: outcome
+    config:
+      outcome: escalated
+      reason: invalid_service_type
+
+  - id: offer_callback
+    type: outcome
+    config:
+      outcome: callback_requested
+      reason: calendar_unavailable
+
+policy:
+  timeout_seconds: 300
+  max_retries: 2
+  concurrent_per_session: 1
