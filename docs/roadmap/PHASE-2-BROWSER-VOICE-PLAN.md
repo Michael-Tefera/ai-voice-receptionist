@@ -2,7 +2,7 @@
 
 Planning document for optional browser-based voice interaction around the existing Phase 1 conversation core.
 
-**Status:** In progress — Task 2.1 complete. Tasks 2.2+ are not authorized by this status alone.
+**Status:** In progress — Tasks 2.1–2.2 complete. Tasks 2.3+ are not authorized by this status alone.
 
 **Related:** [Implementation Roadmap](IMPLEMENTATION-ROADMAP.md)
 
@@ -74,16 +74,23 @@ flowchart LR
 
 Provider-neutral contracts live in `src/core/voice/types.ts`. Browser capability detection lives in `src/adapters/voice/browser-capabilities.ts`.
 
-**Implemented in Task 2.1:** type contracts + SSR-safe capability detection only.  
-**Not implemented yet:** `SpeechToTextProvider` / `TextToSpeechProvider` adapters, microphone permission requests, demo UI voice controls.
+**Implemented:** Task 2.1 contracts + capability detection; Task 2.2 `BrowserSpeechToTextProvider`.  
+**Not implemented yet:** TTS adapter, microphone permission UX, demo UI voice controls.
 
 ### Material detail vs earlier proposal
 
 `VoiceCapability` includes `mediaCapture` (whether `mediaDevices.getUserMedia` exists). Task 2.1 never queries or requests microphone permission, so `microphone` remains `"unknown"`. `supported` is true only when speech recognition, speech synthesis, and media capture APIs are all present.
 
+Task 2.2 STT contract refinements:
+
+- `stop()` returns a trimmed non-empty transcript, or rejects with `VoiceProviderError` / `empty-transcript`
+- `abort()` resolves after cleanup; in-flight `stop()` rejects with `aborted`
+- Interim results are disabled (`interimResults = false`); `onPartial` is unused in the first adapter
+- Browser error mapping: `not-allowed` / `service-not-allowed` → `permission-denied`; `no-speech` → `recognition-failed`; `aborted` → `aborted`; other recognition failures → `recognition-failed`
+
 ### `SpeechToTextProvider`
 
-Defined in `src/core/voice/types.ts` (interface only; no adapter in Task 2.1).
+Defined in `src/core/voice/types.ts`. Browser adapter: `src/adapters/voice/browser-speech-to-text.ts` (`BrowserSpeechToTextProvider`).
 
 ### `TextToSpeechProvider`
 
@@ -264,10 +271,12 @@ In all cases: show status, offer Retry and/or Continue with text, leave text inp
 
 | Path | Status / purpose |
 |------|------------------|
-| `src/core/voice/types.ts` | **Added (Task 2.1)** — provider-neutral voice contracts |
+| `src/core/voice/types.ts` | **Added (Task 2.1)** — provider-neutral voice contracts (`VoiceProviderError` for Task 2.2) |
 | `src/adapters/voice/browser-capabilities.ts` | **Added (Task 2.1)** — SSR-safe capability detection |
 | `src/adapters/voice/browser-capabilities.test.ts` | **Added (Task 2.1)** — capability detection tests |
-| `src/adapters/voice/browser-speech-to-text.ts` | Future — browser-native STT adapter |
+| `src/adapters/voice/browser-speech-to-text.ts` | **Added (Task 2.2)** — browser-native STT adapter |
+| `src/adapters/voice/browser-speech-to-text.test.ts` | **Added (Task 2.2)** — STT adapter tests |
+| `src/types/browser-speech-recognition.d.ts` | **Added (Task 2.2)** — minimal SpeechRecognition typings |
 | `src/adapters/voice/browser-text-to-speech.ts` | Future — browser-native TTS adapter |
 | `src/app/demo/use-voice-session.ts` | Future — demo voice state machine / orchestration hook |
 | `src/app/demo/page.tsx` | Future — integrate optional voice controls; preserve text UI |
@@ -304,14 +313,16 @@ Unchanged by design in Phase 2 first slice:
 
 ### Task 2.2 — Browser speech-to-text adapter
 
+**Status: Complete.**
+
 | Field | Detail |
 |-------|--------|
 | **Objective** | Implement push-to-talk STT adapter behind `SpeechToTextProvider` |
-| **Likely files** | `src/adapters/voice/browser-speech-to-text.ts` + tests |
-| **Completion criteria** | Start/stop/abort; returns final transcript string; no audio upload |
+| **Files** | `src/adapters/voice/browser-speech-to-text.ts`; `src/adapters/voice/browser-speech-to-text.test.ts`; `src/types/browser-speech-recognition.d.ts`; `src/core/voice/types.ts` (`VoiceProviderError`) |
+| **Completion criteria** | Start/stop/abort; trimmed final transcript; empty/permission/no-speech mapped; no audio upload; SSR-safe import |
 | **Risks** | Vendor-prefixed APIs; flaky final-result events |
-| **Manual verification** | Speak a short phrase; confirm transcript text only |
-| **Rollback** | Remove adapter file; leave demo on text-only path |
+| **Manual verification** | Covered by mocked recognition unit tests (demo UI not wired yet) |
+| **Rollback** | Remove STT adapter/tests/typings; restore prior `SpeechToTextProvider` comments if needed |
 
 ### Task 2.3 — Browser text-to-speech adapter
 
@@ -450,4 +461,4 @@ Phase 2 (this slice) does **not** include:
 
 ### Authorization notice
 
-Task 2.1 was explicitly authorized and completed. This document does **not** authorize Tasks 2.2+, dependency installation, telephony work, STT/TTS adapters, or demo voice UI. Those require a separate explicit instruction.
+Tasks 2.1–2.2 were explicitly authorized and completed. This document does **not** authorize Tasks 2.3+, dependency installation, telephony work, TTS adapters, or demo voice UI. Those require a separate explicit instruction.

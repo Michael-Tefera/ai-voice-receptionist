@@ -37,6 +37,27 @@ export interface VoiceError {
   retryable: boolean;
 }
 
+/** Throwable error that carries a structured {@link VoiceError} payload. */
+export class VoiceProviderError extends Error implements VoiceError {
+  readonly code: VoiceErrorCode;
+  readonly retryable: boolean;
+
+  constructor(error: VoiceError) {
+    super(error.message);
+    this.name = "VoiceProviderError";
+    this.code = error.code;
+    this.retryable = error.retryable;
+  }
+}
+
+export function createVoiceError(
+  code: VoiceErrorCode,
+  message: string,
+  retryable: boolean,
+): VoiceProviderError {
+  return new VoiceProviderError({ code, message, retryable });
+}
+
 /**
  * Structured capability snapshot.
  * Task 2.1 detection never requests microphone permission, so `microphone`
@@ -61,13 +82,21 @@ export interface SpeechToTextStartOptions {
 
 /**
  * Provider-neutral speech-to-text contract.
- * No adapter implementation is provided in Task 2.1.
+ * Browser adapter: Task 2.2. Interim/partial results are optional and unused
+ * by the initial non-continuous push-to-talk adapter.
  */
 export interface SpeechToTextProvider {
   isSupported(): boolean;
   start(options?: SpeechToTextStartOptions): Promise<void>;
-  /** Returns the final transcript (may be empty). */
+  /**
+   * Ends the active session and returns the final trimmed transcript.
+   * Rejects with {@link VoiceProviderError} (`empty-transcript`) when empty.
+   */
   stop(): Promise<string>;
+  /**
+   * Cancels the active session. Resolves when cancellation cleanup completes.
+   * Any in-flight `stop()` promise rejects with `aborted`.
+   */
   abort(): Promise<void>;
   onPartial?(callback: (text: string) => void): void;
 }
