@@ -2,7 +2,7 @@
 
 Planning document for optional browser-based voice interaction around the existing Phase 1 conversation core.
 
-**Status:** Planning only. This document does **not** authorize implementation.
+**Status:** In progress — Task 2.1 complete. Tasks 2.2+ are not authorized by this status alone.
 
 **Related:** [Implementation Roadmap](IMPLEMENTATION-ROADMAP.md)
 
@@ -70,51 +70,40 @@ flowchart LR
 
 ---
 
-## 3. Proposed contracts
+## 3. Contracts (Task 2.1)
 
-> **Proposal only.** The TypeScript below is illustrative documentation. These interfaces are **not implemented** and must not be treated as existing source files.
+Provider-neutral contracts live in `src/core/voice/types.ts`. Browser capability detection lives in `src/adapters/voice/browser-capabilities.ts`.
+
+**Implemented in Task 2.1:** type contracts + SSR-safe capability detection only.  
+**Not implemented yet:** `SpeechToTextProvider` / `TextToSpeechProvider` adapters, microphone permission requests, demo UI voice controls.
+
+### Material detail vs earlier proposal
+
+`VoiceCapability` includes `mediaCapture` (whether `mediaDevices.getUserMedia` exists). Task 2.1 never queries or requests microphone permission, so `microphone` remains `"unknown"`. `supported` is true only when speech recognition, speech synthesis, and media capture APIs are all present.
 
 ### `SpeechToTextProvider`
 
-```ts
-/** PROPOSAL — not implemented */
-interface SpeechToTextProvider {
-  isSupported(): boolean;
-  start(options?: { language?: string }): Promise<void>;
-  stop(): Promise<string>; // final transcript (may be empty)
-  abort(): Promise<void>;
-  onPartial?(callback: (text: string) => void): void;
-}
-```
+Defined in `src/core/voice/types.ts` (interface only; no adapter in Task 2.1).
 
 ### `TextToSpeechProvider`
 
-```ts
-/** PROPOSAL — not implemented */
-interface TextToSpeechProvider {
-  isSupported(): boolean;
-  speak(text: string, options?: { language?: string }): Promise<void>;
-  stop(): Promise<void>;
-  isSpeaking(): boolean;
-}
-```
+Defined in `src/core/voice/types.ts` (interface only; no adapter in Task 2.1).
 
 ### `VoiceCapability`
 
 ```ts
-/** PROPOSAL — not implemented */
 interface VoiceCapability {
   speechRecognition: boolean;
   speechSynthesis: boolean;
+  mediaCapture: boolean;
   microphone: "unknown" | "granted" | "denied" | "prompt";
-  supported: boolean; // true when STT + TTS APIs are available enough for the voice path
+  supported: boolean;
 }
 ```
 
 ### `VoiceSessionState`
 
 ```ts
-/** PROPOSAL — not implemented */
 type VoiceSessionState =
   | "idle"
   | "requesting-permission"
@@ -130,34 +119,9 @@ type VoiceSessionState =
 
 ### `VoiceError`
 
-```ts
-/** PROPOSAL — not implemented */
-interface VoiceError {
-  code:
-    | "unsupported"
-    | "permission-denied"
-    | "recognition-failed"
-    | "empty-transcript"
-    | "api-failed"
-    | "playback-failed"
-    | "aborted";
-  message: string; // safe, user-facing, non-sensitive
-  retryable: boolean;
-}
-```
+Defined in `src/core/voice/types.ts` with codes: `unsupported`, `permission-denied`, `recognition-failed`, `empty-transcript`, `api-failed`, `playback-failed`, `aborted`.
 
-Optional companion (future implementation detail, not required as a separate file yet):
-
-```ts
-/** PROPOSAL — not implemented */
-interface AudioCaptureController {
-  requestPermission(): Promise<"granted" | "denied">;
-  start(): Promise<void>;
-  stop(): Promise<void>;
-  abort(): Promise<void>;
-  isActive(): boolean;
-}
-```
+`AudioCaptureController` remains deferred to a later task.
 
 ---
 
@@ -298,21 +262,21 @@ In all cases: show status, offer Retry and/or Continue with text, leave text inp
 
 ## 8. Proposed file impact
 
-Likely future files (**do not create in this planning step**):
-
-| Path | Purpose |
-|------|---------|
-| `src/core/voice/types.ts` | Provider-neutral voice contracts |
-| `src/adapters/voice/browser-speech-to-text.ts` | Browser-native STT adapter |
-| `src/adapters/voice/browser-text-to-speech.ts` | Browser-native TTS adapter |
-| `src/app/demo/use-voice-session.ts` | Demo voice state machine / orchestration hook |
-| `src/app/demo/page.tsx` | Integrate optional voice controls; preserve text UI |
-| `src/app/globals.css` | Voice status / indicator styles |
-| Focused tests under `src/` | Capability detection, state transitions, fallbacks |
-| `README.md` | Phase 2 voice demo notes |
-| `docs/architecture/CALL-FLOW.md` | Document browser voice path |
-| `docs/architecture/TARGET-ARCHITECTURE.md` | Update voice adapter status |
-| `docs/roadmap/IMPLEMENTATION-ROADMAP.md` | Mark Phase 2 progress when implementation completes |
+| Path | Status / purpose |
+|------|------------------|
+| `src/core/voice/types.ts` | **Added (Task 2.1)** — provider-neutral voice contracts |
+| `src/adapters/voice/browser-capabilities.ts` | **Added (Task 2.1)** — SSR-safe capability detection |
+| `src/adapters/voice/browser-capabilities.test.ts` | **Added (Task 2.1)** — capability detection tests |
+| `src/adapters/voice/browser-speech-to-text.ts` | Future — browser-native STT adapter |
+| `src/adapters/voice/browser-text-to-speech.ts` | Future — browser-native TTS adapter |
+| `src/app/demo/use-voice-session.ts` | Future — demo voice state machine / orchestration hook |
+| `src/app/demo/page.tsx` | Future — integrate optional voice controls; preserve text UI |
+| `src/app/globals.css` | Future — voice status / indicator styles |
+| Additional focused tests under `src/` | Future — state transitions, fallbacks |
+| `README.md` | Future — Phase 2 voice demo notes |
+| `docs/architecture/CALL-FLOW.md` | Future — document browser voice path |
+| `docs/architecture/TARGET-ARCHITECTURE.md` | Future — update voice adapter status |
+| `docs/roadmap/IMPLEMENTATION-ROADMAP.md` | Future — mark Phase 2 progress when slice completes |
 
 Unchanged by design in Phase 2 first slice:
 
@@ -327,14 +291,16 @@ Unchanged by design in Phase 2 first slice:
 
 ### Task 2.1 — Contracts and capability detection
 
+**Status: Complete.**
+
 | Field | Detail |
 |-------|--------|
 | **Objective** | Add voice type contracts and a pure capability-detection helper |
-| **Likely files** | `src/core/voice/types.ts`; small detection helper + tests |
-| **Completion criteria** | Types compile; detection reports recognition/synthesis/mic support without starting capture |
+| **Files** | `src/core/voice/types.ts`; `src/adapters/voice/browser-capabilities.ts`; `src/adapters/voice/browser-capabilities.test.ts` |
+| **Completion criteria** | Types compile; detection reports recognition/synthesis/media-capture availability without starting capture or requesting permission |
 | **Risks** | Over-modeling APIs that differ across browsers |
-| **Manual verification** | Load detection in supported and unsupported browsers; compare flags |
-| **Rollback** | Delete `src/core/voice/` and tests; no runtime behavior change if unused |
+| **Manual verification** | Unit tests cover SSR, full support, and partial-support hosts |
+| **Rollback** | Delete `src/core/voice/` and capability helper/tests; no runtime behavior change (unused by demo UI yet) |
 
 ### Task 2.2 — Browser speech-to-text adapter
 
@@ -484,4 +450,4 @@ Phase 2 (this slice) does **not** include:
 
 ### Authorization notice
 
-**This document is a plan only.** It does **not** authorize Phase 2 implementation, dependency installation, or telephony work. Implementation requires an explicit follow-up instruction after the decisions in Section 11 are approved.
+Task 2.1 was explicitly authorized and completed. This document does **not** authorize Tasks 2.2+, dependency installation, telephony work, STT/TTS adapters, or demo voice UI. Those require a separate explicit instruction.
